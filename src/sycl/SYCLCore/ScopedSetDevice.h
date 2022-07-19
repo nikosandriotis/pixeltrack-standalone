@@ -36,7 +36,7 @@ namespace cms {
         /*
         DPCT1003:4: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
         */
-        cudaCheck((dpct::dev_mgr::instance().select_device(device), 0));
+        dpct::dev_mgr::instance().select_device(device);
       }
 
     private:

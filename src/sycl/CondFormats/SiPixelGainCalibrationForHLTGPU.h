@@ -3,7 +3,7 @@
 
 #include <CL/sycl.hpp>
 #include <dpct/dpct.hpp>
-#include "CUDACore/ESProduct.h"
+#include "SYCLCore/ESProduct.h"
 
 class SiPixelGainForHLTonGPU;
 struct SiPixelGainForHLTonGPU_DecodingStructure;
@@ -24,7 +24,7 @@ private:
     SiPixelGainForHLTonGPU *gainForHLTonGPU = nullptr;
     SiPixelGainForHLTonGPU_DecodingStructure *gainDataOnGPU = nullptr;
   };
-  cms::cuda::ESProduct<GPUData> gpuData_;
+  cms::sycltools::ESProduct<GPUData> gpuData_;
 };
 
 #endif  // CalibTracker_SiPixelESProducers_interface_SiPixelGainCalibrationForHLTGPU_h

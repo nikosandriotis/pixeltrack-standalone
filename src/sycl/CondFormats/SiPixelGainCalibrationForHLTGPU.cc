@@ -3,7 +3,7 @@
 
 #include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
 #include "CondFormats/SiPixelGainForHLTonGPU.h"
-#include "CUDACore/cudaCheck.h"
+//#include "CUDACore/cudaCheck.h"
 
 SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForHLTonGPU const& gain,
                                                                  std::vector<char> gainData)
@@ -13,15 +13,16 @@ SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForH
   ?????????
   void *mem = sycl::malloc_host(sizeof(T), stream);
   */
-  cudaCheck(cudaMallocHost(&gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU)));
-  *gainForHLTonHost_ = gain;
+  //void *gainForHLTonHost_ = sycl::malloc_host(sizeof(SiPixelGainForHLTonGPU), dpct::get_default_queue());
+  //cudaCheck(cudaMallocHost(&gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU)));
+  //*gainForHLTonHost_ = gain;
 }
 
 /*
 DPCT1003:0: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
 */
 SiPixelGainCalibrationForHLTGPU::~SiPixelGainCalibrationForHLTGPU() {
-  cudaCheck((sycl::free(gainForHLTonHost_, dpct::get_default_queue()), 0));
+  sycl::free(gainForHLTonHost_, dpct::get_default_queue());
 }
 
 SiPixelGainCalibrationForHLTGPU::GPUData::~GPUData() {
@@ -30,19 +31,21 @@ SiPixelGainCalibrationForHLTGPU::GPUData::~GPUData() {
   /*
   DPCT1003:1: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
   */
-  cudaCheck((sycl::free(gainForHLTonGPU, q_ct1), 0));
+  sycl::free(gainForHLTonGPU, q_ct1);
   /*
   DPCT1003:2: Migrated API does not return error code. (*, 0) is inserted. You may need to rewrite this code.
   */
-  cudaCheck((sycl::free(gainDataOnGPU, q_ct1), 0));
+  sycl::free(gainDataOnGPU, q_ct1);
 }
 
 const SiPixelGainForHLTonGPU* SiPixelGainCalibrationForHLTGPU::getGPUProductAsync(sycl::queue* cudaStream) const {
-  const auto& data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData& data, cudaStream_t stream) {
-    cudaCheck(cudaMalloc((void**)&data.gainForHLTonGPU, sizeof(SiPixelGainForHLTonGPU)));
-    cudaCheck(cudaMalloc((void**)&data.gainDataOnGPU, this->gainData_.size()));
+  const auto& data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData& data, sycl::queue* stream) {
+
+    void *gainForHLTonHost_ = sycl::malloc_host(sizeof(SiPixelGainForHLTonGPU), stream);
+    cudaMalloc((void**)&data.gainForHLTonGPU, sizeof(SiPixelGainForHLTonGPU)));
+    cudaMalloc((void**)&data.gainDataOnGPU, this->gainData_.size()));
     // gains.data().data() is used also for non-GPU code, we cannot allocate it on aligned and write-combined memory
-    cudaCheck(
+    
         cudaMemcpyAsync(data.gainDataOnGPU, this->gainData_.data(), this->gainData_.size(), cudaMemcpyDefault, stream));
 
     cudaCheck(cudaMemcpyAsync(
