@@ -13,9 +13,9 @@ SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForH
   ?????????
   void *mem = sycl::malloc_host(sizeof(T), stream);
   */
-  //void *gainForHLTonHost_ = sycl::malloc_host(sizeof(SiPixelGainForHLTonGPU), dpct::get_default_queue());
+  void *gainForHLTonHost_ = sycl::malloc_host(sizeof(SiPixelGainForHLTonGPU), dpct::get_default_queue());
   //cudaCheck(cudaMallocHost(&gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU)));
-  //*gainForHLTonHost_ = gain;
+  *gainForHLTonHost_ = gain;
 }
 
 /*
@@ -40,8 +40,6 @@ SiPixelGainCalibrationForHLTGPU::GPUData::~GPUData() {
 
 const SiPixelGainForHLTonGPU* SiPixelGainCalibrationForHLTGPU::getGPUProductAsync(sycl::queue* cudaStream) const {
   const auto& data = gpuData_.dataForCurrentDeviceAsync(cudaStream, [this](GPUData& data, sycl::queue* stream) {
-
-    void *gainForHLTonHost_ = sycl::malloc_host(sizeof(SiPixelGainForHLTonGPU), stream);
     cudaMalloc((void**)&data.gainForHLTonGPU, sizeof(SiPixelGainForHLTonGPU)));
     cudaMalloc((void**)&data.gainDataOnGPU, this->gainData_.size()));
     // gains.data().data() is used also for non-GPU code, we cannot allocate it on aligned and write-combined memory

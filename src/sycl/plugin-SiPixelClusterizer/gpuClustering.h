@@ -15,7 +15,7 @@
 namespace gpuClustering {
 
 #ifdef GPU_DEBUG
-  __device__ uint32_t gMaxHit = 0;
+  dpct::global_memory<uint32_t, 0> gMaxHit(0);
 #endif
 
   void countModules(uint16_t const* __restrict__ id,
@@ -54,9 +54,14 @@ namespace gpuClustering {
                int32_t* __restrict__ clusterId,           // output: cluster id of each pixel
                int numElements,
                sycl::nd_item<3> item_ct1,
-               const sycl::stream &stream_ct1,
+               uint32_t *gMaxHit,
                int *msize,
                 *hist,
+               uint32_t *ws,
+               uint32_t *totGood,
+               uint32_t *n40,
+               uint32_t *n60,
+               int *n0,
                unsigned int *foundClusters) {
     if (item_ct1.get_group(2) >= moduleStart[0])
       return;
@@ -67,15 +72,14 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
     if (thisModuleId % 100 == 1)
-      if (threadIdx.x == 0)
+      if (item_ct1.get_local_id(2) == 0)
         printf("start clusterizer for module %d in block %d\n", thisModuleId, blockIdx.x);
 #endif
 
     auto first = firstPixel + item_ct1.get_local_id(2);
 
     // find the index of the first pixel not belonging to this module (or invalid)
-
-    *msize = numElements;
+       *msize = numElements;
     /*
     DPCT1065:1: Consider replacing sycl::nd_item::barrier() with sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better performance if there is no access to global memory.
     */
@@ -97,7 +101,7 @@ namespace gpuClustering {
     using Hist = cms::cuda::HistoContainer<uint16_t, nbins, maxPixInModule, 9, uint16_t>;
 
     typename Hist::Counter ws[32];
-    for (auto j = threadIdx.x; j < Hist::totbins(); j += blockDim.x) {
+    for (auto j = item_ct1.get_local_id(2); j < Hist::totbins(); j += item_ct1.get_local_range().get(2)) {
       hist.off[j] = 0;
     }
     /*
@@ -113,7 +117,6 @@ namespace gpuClustering {
         /*
         DPCT1015:12: Output needs adjustment.
         */
-        stream_ct1 << "too many pixels in module %d: %d > %d\n";
         *msize = maxPixInModule + firstPixel;
       }
     }
@@ -126,8 +129,8 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
     __shared__ uint32_t totGood;
-    totGood = 0;
-    __syncthreads();
+    *totGood = 0;
+     item_ct1.barrier();
 #endif
 
     // fill histo
@@ -143,8 +146,8 @@ namespace gpuClustering {
     DPCT1065:4: Consider replacing sycl::nd_item::barrier() with sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better performance if there is no access to global memory.
     */
     item_ct1.barrier();
-    if (threadIdx.x < 32)
-      ws[threadIdx.x] = 0;  // used by prefix scan...
+    if (item_ct1.get_local_id(2) < 32)
+      ws[item_ct1.get_local_id(2)] = 0;  // used by prefix scan...
     /*
     DPCT1065:5: Consider replacing sycl::nd_item::barrier() with sycl::nd_item::barrier(sycl::access::fence_space::local_space) for better performance if there is no access to global memory.
     */
@@ -157,7 +160,7 @@ namespace gpuClustering {
 #ifdef GPU_DEBUG
     assert(hist.size() == totGood);
     if (thisModuleId % 100 == 1)
-      if (threadIdx.x == 0)
+      if (item_ct1.get_local_id(2) == 0)
         printf("histo size %d\n", hist.size());
 #endif
     for (int i = first; i < *msize; i += item_ct1.get_local_range().get(2)) {
@@ -174,7 +177,7 @@ namespace gpuClustering {
 #endif
     // allocate space for duplicate pixels: a pixel can appear more than once with different charge in the same event
     constexpr int maxNeighbours = 10;
-    assert((hist.size() / blockDim.x) <= maxiter);
+    assert((hist.size() / item_ct1.get_local_range().get(2)) <= maxiter);
     // nearest neighbour
     uint16_t nn[maxiter][maxNeighbours];
     uint8_t nnn[maxiter];  // number of nn
@@ -188,27 +191,26 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
     // look for anomalous high occupancy
-    __shared__ uint32_t n40, n60;
-    n40 = n60 = 0;
-    __syncthreads();
-    for (auto j = threadIdx.x; j < Hist::nbins(); j += blockDim.x) {
+    *n40 = *n60 = 0;
+     item_ct1.barrier();
+    for (auto j = item_ct1.get_local_id(2); j < Hist::nbins(); j += item_ct1.get_local_range().get(2)) {
       if (hist.size(j) > 60)
         atomicAdd(&n60, 1);
       if (hist.size(j) > 40)
         atomicAdd(&n40, 1);
     }
-    __syncthreads();
-    if (0 == threadIdx.x) {
+     item_ct1.barrier();
+    if (0 == item_ct1.get_local_id(2)) {
       if (n60 > 0)
         printf("columns with more than 60 px %d in %d\n", n60, thisModuleId);
       else if (n40 > 0)
         printf("columns with more than 40 px %d in %d\n", n40, thisModuleId);
     }
-    __syncthreads();
+     item_ct1.barrier();
 #endif
 
     // fill NN
-    for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
+    for (auto j = item_ct1.get_local_id(2), k = 0U; j < hist.size(); j += item_ct1.get_local_range().get(2), ++k) {
       assert(k < maxiter);
       auto p = hist.begin() + j;
       auto i = *p + firstPixel;
@@ -242,7 +244,7 @@ namespace gpuClustering {
     */
     while ((item_ct1.barrier(), sycl::any_of_group(item_ct1.get_group(), more))) {
       if (1 == nloops % 2) {
-        for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
+        for (auto j = item_ct1.get_local_id(2), k = 0U; j < hist.size(); j += item_ct1.get_local_range().get(2), ++k) {
           auto p = hist.begin() + j;
           auto i = *p + firstPixel;
           auto m = clusterId[i];
@@ -252,7 +254,7 @@ namespace gpuClustering {
         }
       } else {
         more = false;
-        for (auto j = threadIdx.x, k = 0U; j < hist.size(); j += blockDim.x, ++k) {
+        for (auto j = item_ct1.get_local_id(2), k = 0U; j < hist.size(); j += item_ct1.get_local_range().get(2), ++k) {
           auto p = hist.begin() + j;
           auto i = *p + firstPixel;
           for (int kk = 0; kk < nnn[k]; ++kk) {
@@ -273,14 +275,13 @@ namespace gpuClustering {
 
 #ifdef GPU_DEBUG
     {
-      __shared__ int n0;
-      if (threadIdx.x == 0)
-        n0 = nloops;
-      __syncthreads();
+      if (item_ct1.get_local_id(2) == 0)
+        *n0 = nloops;
+       item_ct1.barrier();
       auto ok = n0 == nloops;
-      assert(__syncthreads_and(ok));
+      assert((item_ct1.barrier(), sycl::all_of_group(item_ct1.get_group(), ok)));
       if (thisModuleId % 100 == 1)
-        if (threadIdx.x == 0)
+        if (item_ct1.get_local_id(2) == 0)
           printf("# loops %d\n", nloops);
     }
 #endif
