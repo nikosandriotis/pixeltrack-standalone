@@ -15,8 +15,8 @@ namespace cms {
    *
    * In case of errors, throws an exception.
    */
-    inline bool eventWorkHasCompleted(sycl::event event) try {
-      const auto ret = (int)event.get_info<sycl::info::event::command_execution_status>();
+    inline bool eventWorkHasCompleted(sycl::event* event) try {
+      const auto ret = (int)event->get_info<sycl::info::event::command_execution_status>();
       if (ret == 0) {
         return true;
       } else

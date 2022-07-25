@@ -1,9 +1,9 @@
 #ifndef HeterogeneousCore_SYCLUtilities_EventCache_h
 #define HeterogeneousCore_SYCLUtilities_EventCache_h
 
-#include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
 #include <vector>
+
+#include <CL/sycl.hpp>
 
 #include "Framework/ReusableObjectHolder.h"
 #include "SYCLCore/SharedEventPtr.h"
@@ -18,13 +18,13 @@ namespace cms {
 
       EventCache();
 
-      // Gets a (cached) SYCL event for the current device. The event
+      // Gets a (cached) CUDA event for the current device. The event
       // will be returned to the cache by the shared_ptr destructor. The
       // returned event is guaranteed to be in the state where all
       // captured work has completed, i.e. cudaEventQuery() == cudaSuccess.
       //
       // This function is thread safe
-      SharedEventPtr get();
+      SharedEventPtr get(sycl::device dev);
 
     private:
       friend class ::SYCLService;
@@ -32,7 +32,7 @@ namespace cms {
       // thread safe
       SharedEventPtr makeOrGet(int dev);
 
-      // not thread safe, intended to be called only from SYCLService destructor
+      // not thread safe, intended to be called only from CUDAService destructor
       void clear();
 
       class Deleter {
@@ -42,7 +42,7 @@ namespace cms {
         void operator()(sycl::event event) const;
 
       private:
-        int device_ = -1;
+        int device_ = -1; 
       };
 
       std::vector<edm::ReusableObjectHolder<BareEvent, Deleter>> cache_;

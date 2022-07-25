@@ -11,6 +11,7 @@
 #include "Framework/EDPutToken.h"
 #include "Framework/Event.h"
 #include "Framework/WaitingTaskWithArenaHolder.h"
+#include "SYCLCore/chooseDevice.h"
 
 namespace cms {
   namespace cudatest {

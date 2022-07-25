@@ -3,7 +3,6 @@
 #include "SYCLDataFormats/SiPixelDigisSYCL.h"
 #include "SYCLDataFormats/SiPixelDigiErrorsSYCL.h"
 #include "CondFormats/SiPixelGainCalibrationForHLTGPU.h"
-/*
 #include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"
 #include "CondFormats/SiPixelFedIds.h"
 #include "DataFormats/PixelErrors.h"
@@ -175,4 +174,3 @@ void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
 
 // define as framework plugin
 DEFINE_FWK_MODULE(SiPixelRawToClusterCUDA);
-*/
