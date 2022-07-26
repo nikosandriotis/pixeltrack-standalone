@@ -19,7 +19,7 @@ namespace cms::sycltools {
 
   SharedEventPtr EventCache::get(sycl::device dev) {
     //const auto dev = stream.get_device();
-    vector<sycl::device> device_list = sycl::device::get_devices(sycl::info::device_type::all);
+    std::vector<sycl::device> device_list = sycl::device::get_devices(sycl::info::device_type::all);
 	  int dev_idx = distance(device_list.begin(), find(device_list.begin(), device_list.end(), dev));
     auto event = makeOrGet(dev_idx);
     // captured work has completed, or a just-created event

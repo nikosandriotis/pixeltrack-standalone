@@ -18,9 +18,9 @@ SiPixelFedCablingMapGPUWrapper::SiPixelFedCablingMapGPUWrapper(SiPixelFedCabling
                                                                std::vector<unsigned char> modToUnp)
     : modToUnpDefault(modToUnp.size()), hasQuality_(true) {
   //cudaCheck(cudaMallocHost(&cablingMapHost, sizeof(SiPixelFedCablingMapGPU)));
-  std::unique_ptr<SiPixelGainForHLTonGPU> cablingMapHost = std::make_unique<SiPixelFedCablingMapGPU>();
+  std::unique_ptr<SiPixelFedCablingMapGPU> cablingMapHost = std::make_unique<SiPixelFedCablingMapGPU>();
   
-  std::memcpy(cablingMapHost, &cablingMap, sizeof(SiPixelFedCablingMapGPU));
+  std::memcpy(cablingMapHost.get(), &cablingMap, sizeof(SiPixelFedCablingMapGPU));
   std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault.begin());
 }
 

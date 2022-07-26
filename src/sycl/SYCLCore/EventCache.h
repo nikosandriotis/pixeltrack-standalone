@@ -38,13 +38,8 @@ namespace cms {
       class Deleter {
       public:
         Deleter() = default;
-        Deleter(int d) : device_{d} {}
-        void operator()(sycl::event event) const;
-
-      private:
-        int device_ = -1; 
+        void operator()(sycl::event* event) const;
       };
-
       std::vector<edm::ReusableObjectHolder<BareEvent, Deleter>> cache_;
     };
 

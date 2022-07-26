@@ -33,7 +33,7 @@ private:
                edm::WaitingTaskWithArenaHolder waitingTaskHolder) override;
   void produce(edm::Event& iEvent, const edm::EventSetup& iSetup) override;
 
-  cms::cuda::ContextState ctxState_;
+  cms::sycltools::ContextState ctxState_;
 
   edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
   edm::EDPutTokenT<cms::sycltools::Product<SiPixelDigisSYCL>> digiPutToken_;
