@@ -45,7 +45,7 @@ const unsigned char* SiPixelFedCablingMapGPUWrapper::getModToUnpAllAsync(sycl::q
   const auto& data =
       modToUnp_.dataForCurrentDeviceAsync(syclStream, [this](ModulesToUnpack& data, sycl::queue stream) {
          data.modToUnpDefault = (unsigned char *)sycl::malloc_device(pixelgpudetails::MAX_SIZE_BYTE_BOOL, stream);
-         stream.memcpy(data.modToUnpDefault, this->modToUnpDefault.data(), this->modToUnpDefault.size() * sizeof(unsigned char)));
+         stream.memcpy(data.modToUnpDefault, this->modToUnpDefault.data(), this->modToUnpDefault.size() * sizeof(unsigned char));
         //cudaCheck(cudaMalloc((void**)&data.modToUnpDefault, pixelgpudetails::MAX_SIZE_BYTE_BOOL));
         //cudaCheck(cudaMemcpyAsync(data.modToUnpDefault,
         //                          this->modToUnpDefault.data(),

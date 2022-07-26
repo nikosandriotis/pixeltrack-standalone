@@ -566,7 +566,7 @@ namespace pixelgpudetails {
                                                        bool useQualityInfo,
                                                        bool includeErrors,
                                                        bool debug,
-                                                       sycl::queue *stream) {
+                                                       sycl::queue stream) {
     nDigis = wordCounter;
 
 #ifdef GPU_DEBUG

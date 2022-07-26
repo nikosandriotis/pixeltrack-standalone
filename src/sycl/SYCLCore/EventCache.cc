@@ -20,7 +20,7 @@ namespace cms::sycltools {
 	  int dev_idx = distance(device_list.begin(), find(device_list.begin(), device_list.end(), dev));
     auto event = makeOrGet(dev_idx);
     // captured work has completed, or a just-created event
-    if (eventWorkHasCompleted(event.get())) {
+    if (eventWorkHasCompleted(*event.get())) {
       return event;
     }
 
@@ -42,7 +42,7 @@ namespace cms::sycltools {
 
   SharedEventPtr EventCache::makeOrGet(int dev) {
     return cache_[dev].makeOrGet([dev]() {
-      sycl::event event;
+      sycl::event* event;
       // it should be a bit faster to ignore timings
       //cudaCheck(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
       return std::unique_ptr<BareEvent, Deleter>(event, Deleter());
