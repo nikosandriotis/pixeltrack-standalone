@@ -9,7 +9,7 @@
 #include <vector>
 
 #include "SYCLCore/EventCache.h"
-//#include "SYCLCore/ScopedSetDevice.h"
+#include "SYCLCore/ScopedSetDevice.h"
 //#include "SYCLCore/cudaCheck.h"
 #include "SYCLCore/deviceCount.h"
 #include "SYCLCore/currentDevice.h"

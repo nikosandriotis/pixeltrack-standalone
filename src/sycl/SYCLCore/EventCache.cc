@@ -3,15 +3,12 @@
 #include "SYCLCore/currentDevice.h"
 #include "SYCLCore/deviceCount.h"
 #include "SYCLCore/eventWorkHasCompleted.h"
-//#include "SYCLCore/ScopedSetDevice.h"
+#include "SYCLCore/ScopedSetDevice.h"
 
 namespace cms::sycltools {
-  /*void EventCache::Deleter::operator()(sycl::event event) const {
-    if (device_ != -1) {
-      ScopedSetDevice deviceGuard{device_};
-      cudaCheck(cudaEventDestroy(event));
-    }
-  }*/
+  void EventCache::Deleter::operator()(sycl::event* event) const {
+
+  }
 
   // EventCache should be constructed by the first call to
   // getEventCache() only if we have CUDA devices present
