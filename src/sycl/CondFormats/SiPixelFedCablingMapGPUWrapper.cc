@@ -9,7 +9,7 @@
 #include <CL/sycl.hpp>
 
 // CMSSW includes
-#include "SYCLCore/cudaCheck.h"
+//#include "SYCLCore/cudaCheck.h"
 #include "SYCLCore/device_unique_ptr.h"
 #include "SYCLCore/host_unique_ptr.h"
 #include "CondFormats/SiPixelFedCablingMapGPUWrapper.h"

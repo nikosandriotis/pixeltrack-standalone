@@ -2,7 +2,7 @@
 #define RecoLocalTracker_SiPixelClusterizer_plugins_gpuCalibPixel_h
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <cstdint>
 #include <cstdio>
 

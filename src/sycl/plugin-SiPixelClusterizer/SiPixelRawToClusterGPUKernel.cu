@@ -8,7 +8,7 @@
 
 // C++ includes
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <cassert>
 #include <chrono>
 #include <cstdio>

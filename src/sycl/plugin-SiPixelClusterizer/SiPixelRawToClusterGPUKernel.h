@@ -2,7 +2,7 @@
 #define RecoLocalTracker_SiPixelClusterizer_plugins_SiPixelRawToClusterGPUKernel_h
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <algorithm>
 
 #include "SYCLDataFormats/SiPixelDigisSYCL.h"

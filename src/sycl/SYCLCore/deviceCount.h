@@ -8,7 +8,7 @@
 namespace cms {
   namespace sycltools {
     inline int deviceCount() {
-      (sycl::device::get_devices(sycl::info::device_type::all)).size();
+      return (sycl::device::get_devices(sycl::info::device_type::all)).size();
     }
   }  // namespace sycltools
 }  // namespace cms

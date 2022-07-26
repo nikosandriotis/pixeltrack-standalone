@@ -7,9 +7,10 @@
 
 namespace cms {
   namespace sycltools {
-    inline int currentDevice() {
-      int dev;
-      dev = dpct::dev_mgr::instance().current_device_id();
+    inline sycl::device currentDevice(sycl::queue stream) {
+      sycl::device dev;
+      dev = stream.get_device();
+      //sycl::device::device(&dev);
       return dev;
     }
   }  // namespace sycltools
