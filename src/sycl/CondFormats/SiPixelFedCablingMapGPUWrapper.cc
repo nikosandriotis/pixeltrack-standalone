@@ -37,7 +37,7 @@ const SiPixelFedCablingMapGPU* SiPixelFedCablingMapGPUWrapper::getGPUProductAsyn
     stream.memcpy(data.cablingMapDevice, this->cablingMapHost, sizeof(SiPixelFedCablingMapGPU));
     //cudaCheck(cudaMemcpyAsync(
     //    data.cablingMapDevice, this->cablingMapHost, sizeof(SiPixelFedCablingMapGPU), cudaMemcpyDefault, stream));
- // });
+  });
   return data.cablingMapDevice;
 }
 

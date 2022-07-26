@@ -48,7 +48,7 @@ namespace cms::sycltools {
       sycl::event event;
       // it should be a bit faster to ignore timings
       //cudaCheck(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
-      return std::unique_ptr<BareEvent, Deleter>(event, Deleter{dev});
+      return std::unique_ptr<BareEvent, Deleter>(event, Deleter());
     });
   }
 
