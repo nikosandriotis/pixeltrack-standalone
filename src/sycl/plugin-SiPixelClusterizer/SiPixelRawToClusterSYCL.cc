@@ -13,7 +13,7 @@
 #include "Framework/Event.h"
 #include "Framework/PluginFactory.h"
 #include "Framework/EDProducer.h"
-#include "CUDACore/ScopedContext.h"
+#include "SYCLCore/ScopedContext.h"
 
 #include "ErrorChecker.h"
 #include "SiPixelRawToClusterGPUKernel.h"
@@ -22,10 +22,10 @@
 #include <string>
 #include <vector>
 
-class SiPixelRawToClusterCUDA : public edm::EDProducerExternalWork {
+class SiPixelRawToClusterSYCL : public edm::EDProducerExternalWork {
 public:
-  explicit SiPixelRawToClusterCUDA(edm::ProductRegistry& reg);
-  ~SiPixelRawToClusterCUDA() override = default;
+  explicit SiPixelRawToClusterSYCL(edm::ProductRegistry& reg);
+  ~SiPixelRawToClusterSYCL() override = default;
 
 private:
   void acquire(const edm::Event& iEvent,
@@ -36,9 +36,9 @@ private:
   cms::cuda::ContextState ctxState_;
 
   edm::EDGetTokenT<FEDRawDataCollection> rawGetToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigisCUDA>> digiPutToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelDigiErrorsCUDA>> digiErrorPutToken_;
-  edm::EDPutTokenT<cms::cuda::Product<SiPixelClustersCUDA>> clusterPutToken_;
+  edm::EDPutTokenT<cms::sycltools::Product<SiPixelDigisSYCL>> digiPutToken_;
+  edm::EDPutTokenT<cms::sycltools::Product<SiPixelDigiErrorsSYCL>> digiErrorPutToken_;
+  edm::EDPutTokenT<cms::sycltools::Product<SiPixelClustersSYCL>> clusterPutToken_;
 
   pixelgpudetails::SiPixelRawToClusterGPUKernel gpuAlgo_;
   std::unique_ptr<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender> wordFedAppender_;
@@ -49,24 +49,24 @@ private:
   const bool useQuality_;
 };
 
-SiPixelRawToClusterCUDA::SiPixelRawToClusterCUDA(edm::ProductRegistry& reg)
+SiPixelRawToClusterSYCL::SiPixelRawToClusterSYCL(edm::ProductRegistry& reg)
     : rawGetToken_(reg.consumes<FEDRawDataCollection>()),
-      digiPutToken_(reg.produces<cms::cuda::Product<SiPixelDigisCUDA>>()),
-      clusterPutToken_(reg.produces<cms::cuda::Product<SiPixelClustersCUDA>>()),
+      digiPutToken_(reg.produces<cms::sycltools::Product<SiPixelDigisSYCL>>()),
+      clusterPutToken_(reg.produces<cms::sycltools::Product<SiPixelClustersSYCL>>()),
       isRun2_(true),
       includeErrors_(true),
       useQuality_(true) {
   if (includeErrors_) {
-    digiErrorPutToken_ = reg.produces<cms::cuda::Product<SiPixelDigiErrorsCUDA>>();
+    digiErrorPutToken_ = reg.produces<cms::sycltools::Product<SiPixelDigiErrorsSYCL>>();
   }
 
   wordFedAppender_ = std::make_unique<pixelgpudetails::SiPixelRawToClusterGPUKernel::WordFedAppender>();
 }
 
-void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
+void SiPixelRawToClusterSYCL::acquire(const edm::Event& iEvent,
                                       const edm::EventSetup& iSetup,
                                       edm::WaitingTaskWithArenaHolder waitingTaskHolder) {
-  cms::cuda::ScopedContextAcquire ctx{iEvent.streamID(), std::move(waitingTaskHolder), ctxState_};
+  cms::sycltools::ScopedContextAcquire ctx{iEvent.streamID(), std::move(waitingTaskHolder), ctxState_};
 
   auto const& hgpuMap = iSetup.get<SiPixelFedCablingMapGPUWrapper>();
   if (hgpuMap.hasQuality() != useQuality_) {
@@ -161,8 +161,8 @@ void SiPixelRawToClusterCUDA::acquire(const edm::Event& iEvent,
                              ctx.stream());
 }
 
-void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  cms::cuda::ScopedContextProduce ctx{ctxState_};
+void SiPixelRawToClusterSYCL::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
+  cms::sycltools::ScopedContextProduce ctx{ctxState_};
 
   auto tmp = gpuAlgo_.getResults();
   ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
@@ -173,4 +173,4 @@ void SiPixelRawToClusterCUDA::produce(edm::Event& iEvent, const edm::EventSetup&
 }
 
 // define as framework plugin
-DEFINE_FWK_MODULE(SiPixelRawToClusterCUDA);
+DEFINE_FWK_MODULE(SiPixelRawToClusterSYCL);

@@ -2,7 +2,7 @@
 #define RecoLocalTracker_SiPixelClusterizer_SiPixelFedCablingMapGPUWrapper_h
 
 #include "SYCLCore/ESProduct.h"
-#include "SYCLCore/HostAllocator.h"
+//#include "SYCLCore/HostAllocator.h"
 #include "SYCLCore/device_unique_ptr.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
 
@@ -25,7 +25,7 @@ public:
   const unsigned char *getModToUnpAllAsync(sycl::queue stream) const;
 
 private:
-  std::vector<unsigned char, cms::sycltools::HostAllocator<unsigned char>> modToUnpDefault;
+  std::vector<unsigned char> modToUnpDefault;
   bool hasQuality_;
 
   SiPixelFedCablingMapGPU *cablingMapHost = nullptr;  // pointer to struct in CPU

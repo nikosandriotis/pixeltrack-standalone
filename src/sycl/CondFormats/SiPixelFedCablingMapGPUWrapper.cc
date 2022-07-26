@@ -6,7 +6,7 @@
 #include <vector>
 
 // SYCL includes
-#include <cuda_runtime.h>
+#include <CL/sycl.hpp>
 
 // CMSSW includes
 #include "SYCLCore/cudaCheck.h"
