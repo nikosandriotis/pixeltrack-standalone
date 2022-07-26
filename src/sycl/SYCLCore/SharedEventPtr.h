@@ -2,7 +2,7 @@
 #define HeterogeneousCore_SYCLUtilities_SharedEventPtr_h
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <memory>
 #include <type_traits>
 

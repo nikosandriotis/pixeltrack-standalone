@@ -2,7 +2,7 @@
 #define HeterogeneousCore_SYCLCore_ESProduct_h
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 #include <atomic>
 #include <cassert>
 #include <mutex>

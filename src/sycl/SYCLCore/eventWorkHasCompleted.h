@@ -2,7 +2,7 @@
 #define HeterogeneousCore_SYCLUtilities_eventWorkHasCompleted_h
 
 #include <CL/sycl.hpp>
-#include <dpct/dpct.hpp>
+//#include <dpct/dpct.hpp>
 //#include "SYCLCore/cudaCheck.h"
 
 namespace cms {
