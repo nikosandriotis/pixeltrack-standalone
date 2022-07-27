@@ -23,7 +23,7 @@
 
 // CMSSW includes
 #include "SYCLDataFormats/gpuClusteringConstants.h"
-#include "SYCLCore/cudaCheck.h"
+//#include "SYCLCore/cudaCheck.h"
 #include "SYCLCore/device_unique_ptr.h"
 #include "SYCLCore/host_unique_ptr.h"
 #include "CondFormats/SiPixelFedCablingMapGPU.h"
@@ -42,14 +42,11 @@ namespace pixelgpudetails {
   constexpr uint32_t MAX_FED_WORDS = pixelgpudetails::MAX_FED * pixelgpudetails::MAX_WORD;
 
   SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender() {
-    /*
-    DPCT1048:0: The original value cudaHostAllocWriteCombined is not meaningful in the migrated code and was removed or replaced with 0. You may need to check the migrated code.
-    */
-    word_ = cms::sycltools::make_host_noncached_unique<unsigned int[]>(MAX_FED_WORDS, 0);
-    /*
-    DPCT1048:1: The original value cudaHostAllocWriteCombined is not meaningful in the migrated code and was removed or replaced with 0. You may need to check the migrated code.
-    */
-    fedId_ = cms::sycltools::make_host_noncached_unique<unsigned char[]>(MAX_FED_WORDS, 0);
+     
+    std::unique_ptr<unsigned int> word_ = std::make_unique<unsigned int>();
+    //word_ = cms::sycltools::make_host_noncached_unique<unsigned int[]>(MAX_FED_WORDS, 0);
+    std::unique_ptr<unsigned int> fedId_ = std::make_unique<unsigned int>();
+    //fedId_ = cms::sycltools::make_host_noncached_unique<unsigned char[]>(MAX_FED_WORDS, 0);
   }
 
   void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
@@ -153,7 +150,7 @@ namespace pixelgpudetails {
     return global;
   }
 
-  uint8_t conversionError(uint8_t fedId, uint8_t status, const sycl::stream &stream_ct1, bool debug = false) {
+  uint8_t conversionError(uint8_t fedId, uint8_t status, bool debug = false) {
     uint8_t errorType = 0;
 
     // debug = true;
@@ -161,46 +158,48 @@ namespace pixelgpudetails {
     switch (status) {
       case (1): {
         if (debug)
+        {}
           /*
           DPCT1015:23: Output needs adjustment.
           */
-          stream_ct1 << "Error in Fed: %i, invalid channel Id (errorType = 35\n)";
+          //stream_ct1 << "Error in Fed: %i, invalid channel Id (errorType = 35\n)";
         errorType = 35;
         break;
       }
       case (2): {
         if (debug)
+        {}
           /*
           DPCT1015:24: Output needs adjustment.
           */
-          stream_ct1 << "Error in Fed: %i, invalid ROC Id (errorType = 36)\n";
+          //stream_ct1 << "Error in Fed: %i, invalid ROC Id (errorType = 36)\n";
         errorType = 36;
         break;
       }
       case (3): {
         if (debug)
+        {}
           /*
           DPCT1015:25: Output needs adjustment.
           */
-          stream_ct1 << "Error in Fed: %i, invalid dcol/pixel value (errorType = 37)\n";
+          //stream_ct1 << "Error in Fed: %i, invalid dcol/pixel value (errorType = 37)\n";
         errorType = 37;
         break;
       }
       case (4): {
         if (debug)
+        {}
           /*
           DPCT1015:26: Output needs adjustment.
           */
-          stream_ct1 << "Error in Fed: %i, dcol/pixel read out of order (errorType = 38)\n";
+          //stream_ct1 << "Error in Fed: %i, dcol/pixel read out of order (errorType = 38)\n";
         errorType = 38;
         break;
       }
       default:
         if (debug)
-          /*
-          DPCT1015:27: Output needs adjustment.
-          */
-          stream_ct1 << "Cabling check returned unexpected result, status = %i\n";
+{}
+          //stream_ct1 << "Cabling check returned unexpected result, status = %i\n";
     };
 
     return errorType;
@@ -217,8 +216,7 @@ namespace pixelgpudetails {
   bool dcolIsValid(uint32_t dcol, uint32_t pxid) { return ((dcol < 26) & (2 <= pxid) & (pxid < 162)); }
 
   uint8_t checkROC(
-      uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU *cablingMap,
-      const sycl::stream &stream_ct1, bool debug = false) {
+      uint32_t errorWord, uint8_t fedId, uint32_t link, const SiPixelFedCablingMapGPU *cablingMap, bool debug = false) {
     uint8_t errorType = (errorWord >> pixelgpudetails::ROC_shift) & pixelgpudetails::ERROR_mask;
     if (errorType < 25)
       return 0;
@@ -233,47 +231,50 @@ namespace pixelgpudetails {
             errorFound = false;
         }
         if (debug and errorFound)
-          stream_ct1 << "Invalid ROC = 25 found (errorType = 25)\n";
+          //stream_ct1 << "Invalid ROC = 25 found (errorType = 25)\n";
         break;
       }
       case (26): {
         if (debug)
-          stream_ct1 << "Gap word found (errorType = 26)\n";
+          //stream_ct1 << "Gap word found (errorType = 26)\n";
         errorFound = true;
         break;
       }
       case (27): {
         if (debug)
-          stream_ct1 << "Dummy word found (errorType = 27)\n";
+          //stream_ct1 << "Dummy word found (errorType = 27)\n";
         errorFound = true;
         break;
       }
       case (28): {
         if (debug)
-          stream_ct1 << "Error fifo nearly full (errorType = 28)\n";
+          //stream_ct1 << "Error fifo nearly full (errorType = 28)\n";
         errorFound = true;
         break;
       }
       case (29): {
         if (debug)
-          stream_ct1 << "Timeout on a channel (errorType = 29)\n";
+          //stream_ct1 << "Timeout on a channel (errorType = 29)\n";
         if ((errorWord >> pixelgpudetails::OMIT_ERR_shift) & pixelgpudetails::OMIT_ERR_mask) {
           if (debug)
-            stream_ct1 << "...first errorType=29 error, this gets masked out\n";
+          {}
+            //stream_ct1 << "...first errorType=29 error, this gets masked out\n";
         }
         errorFound = true;
         break;
       }
       case (30): {
         if (debug)
-          stream_ct1 << "TBM error trailer (errorType = 30)\n";
+        {}
+          //stream_ct1 << "TBM error trailer (errorType = 30)\n";
         int StateMatch_bits = 4;
         int StateMatch_shift = 8;
         uint32_t StateMatch_mask = ~(~uint32_t(0) << StateMatch_bits);
         int StateMatch = (errorWord >> StateMatch_shift) & StateMatch_mask;
         if (StateMatch != 1 && StateMatch != 8) {
           if (debug)
-            stream_ct1 << "FED error 30 with unexpected State Bits (errorType = 30)\n";
+          {}
+            //stream_ct1 << "FED error 30 with unexpected State Bits (errorType = 30)\n";
         }
         if (StateMatch == 1)
           errorType = 40;  // 1=Overflow -> 40, 8=number of ROCs -> 30
@@ -282,7 +283,7 @@ namespace pixelgpudetails {
       }
       case (31): {
         if (debug)
-          stream_ct1 << "Event number error (errorType = 31)\n";
+          //stream_ct1 << "Event number error (errorType = 31)\n";
         errorFound = true;
         break;
       }
@@ -415,7 +416,7 @@ namespace pixelgpudetails {
       uint32_t roc = getRoc(ww);    // Extract Roc in link
       pixelgpudetails::DetIdGPU detId = getRawId(cablingMap, fedId, link, roc);
 
-      uint8_t errorType = checkROC(ww, fedId, link, cablingMap, stream_ct1, debug);
+      uint8_t errorType = checkROC(ww, fedId, link, cablingMap, debug);
       skipROC = (roc < pixelgpudetails::maxROCIndex) ? false : (errorType != 0);
       if (includeErrors and skipROC) {
         uint32_t rID = getErrRawID(fedId, ww, errorType, cablingMap, debug);
@@ -462,13 +463,13 @@ namespace pixelgpudetails {
         localPix.col = col;
         if (includeErrors) {
           if (not rocRowColIsValid(row, col)) {
-            uint8_t error = conversionError(fedId, 3, stream_ct1, debug);  //use the device function and fill the arrays
+            uint8_t error = conversionError(fedId, 3, debug);  //use the device function and fill the arrays
             err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
             if (debug)
               /*
               DPCT1015:28: Output needs adjustment.
               */
-              stream_ct1 << "BPIX1  Error status: %i\n";
+              //stream_ct1 << "BPIX1  Error status: %i\n";
             continue;
           }
         }
@@ -481,13 +482,13 @@ namespace pixelgpudetails {
         localPix.row = row;
         localPix.col = col;
         if (includeErrors and not dcolIsValid(dcol, pxid)) {
-          uint8_t error = conversionError(fedId, 3, stream_ct1, debug);
+          uint8_t error = conversionError(fedId, 3, debug);
           err->push_back(PixelErrorCompact{rawId, ww, error, fedId});
           if (debug)
             /*
             DPCT1015:29: Output needs adjustment.
             */
-            stream_ct1 << "Error status: %i %d %d %d %d\n";
+            //stream_ct1 << "Error status: %i %d %d %d %d\n";
           continue;
         }
       }
@@ -516,8 +517,8 @@ namespace pixelgpudetails {
       moduleStart[i + 1] = std::min(gpuClustering::maxHitsInModule(), cluStart[i]);
     }
 
-    cms::sycltools::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, ws);
-    cms::sycltools::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, ws);
+    cms::sycltools::blockPrefixScan(moduleStart + 1, moduleStart + 1, 1024, item_ct1, ws);
+    cms::sycltools::blockPrefixScan(moduleStart + 1025, moduleStart + 1025, gpuClustering::MaxNumModules - 1024, item_ct1, ws);
 
     for (int i = first + 1025, iend = gpuClustering::MaxNumModules + 1; i < iend;
          i += item_ct1.get_local_range().get(2)) {
@@ -579,7 +580,7 @@ namespace pixelgpudetails {
     }
     clusters_d = SiPixelClustersSYCL(gpuClustering::MaxNumModules, stream);
 
-    nModules_Clusters_h = cms::cuda::make_host_unique<uint32_t[]>(2, stream);
+    nModules_Clusters_h = cms::sycltools::make_host_unique<uint32_t[]>(2, stream);
 
     if (wordCounter)  // protect in case of empty event....
     {
@@ -591,28 +592,41 @@ namespace pixelgpudetails {
       auto word_d = cms::sycltools::make_device_unique<uint32_t[]>(wordCounter, stream);
       auto fedId_d = cms::sycltools::make_device_unique<uint8_t[]>(wordCounter, stream);
 
-      cms::sycltools::copyAsync(word_d, wordFed.word(), wordCounter, stream);
-      cms::sycltools::copyAsync(fedId_d, wordFed.fedId(), wordCounter/2, stream);
-
-      stream.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocks) * sycl::range<3>(1, 1, threadsPerBlock), sycl::range<3>(1, 1, threadsPerBlock)),
+      stream.memcpy(word_d.get(), wordFed.word(), wordCounter);
+      stream.memcpy(fedId_d.get(), wordFed.fedId(), wordCounter/2);
+      stream.submit([&](sycl::handler &cgh) {
+             auto cablingMap_kernel   = cablingMap;
+             auto modToUnp_kernel     = modToUnp;
+             auto word_d_kernel       = word_d.get();
+             auto fedId_d_kernel      = fedId_d.get();
+             auto digis_x_kernel      = digis_d.xx();
+             auto digis_y_kernel      = digis_d.yy();
+             auto digis_adc_kernel    = digis_d.adc();
+             auto digis_digi_kernel   = digis_d.pdigi();
+             auto digis_raw_kernel    = digis_d.rawIdArr();
+             auto digis_mod_kernel    = digis_d.moduleInd();
+             auto digiErrors_d_kernel = digiErrors_d.error();
+      sycl::stream out(1024, 768, cgh);
+      cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocks) * sycl::range<3>(1, 1, threadsPerBlock), sycl::range<3>(1, 1, threadsPerBlock)),
                           [=](sycl::nd_item<3> item) {
-                                RawToDigi_kernel(cablingMap,
-                                                 modToUnp,
+                                RawToDigi_kernel(cablingMap_kernel,
+                                                 modToUnp_kernel,
                                                  wordCounter,
-                                                 word_d.get(),
-                                                 fedId_d.get(),
-                                                 digis_d.xx(),
-                                                 digis_d.yy(),
-                                                 digis_d.adc(),
-                                                 digis_d.pdigi(),
-                                                 digis_d.rawIdArr(),
-                                                 digis_d.moduleInd(),
-                                                 digiErrors_d.error(),  // returns nullptr if default-constructed
+                                                 word_d_kernel,
+                                                 fedId_d_kernel,
+                                                 digis_x_kernel,
+                                                 digis_y_kernel,
+                                                 digis_adc_kernel,
+                                                 digis_digi_kernel,
+                                                 digis_raw_kernel,
+                                                 digis_mod_kernel,
+                                                 digiErrors_d_kernel,  // returns nullptr if default-constructed
                                                  useQualityInfo,
                                                  includeErrors,
                                                  debug,
                                                  item);
                           });
+       });
       /*
       DPCT1010:31: SYCL uses exceptions to report errors and does not use the error codes. The call was replaced with 0. You need to rewrite this code.
       */
@@ -634,21 +648,32 @@ namespace pixelgpudetails {
       int threadsPerBlock = 256;
       int blocks =
           (std::max(int(wordCounter), int(gpuClustering::MaxNumModules)) + threadsPerBlock - 1) / threadsPerBlock;
-      
-      stream.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocks) * sycl::range<3>(1, 1, threadsPerBlock), sycl::range<3>(1, 1, threadsPerBlock)),
+      stream.submit([&](sycl::handler &cgh) {
+        sycl::stream out(1024, 768, cgh);
+        auto digis_x_kernel     = digis_d.c_xx();
+        auto digis_y_kernel     = digis_d.c_yy();
+        auto digis_adc_kernel   = digis_d.adc();
+        auto digis_ind_kernel   = digis_d.moduleInd();
+        auto gains_kernel       = gains;
+        auto clusters_s_kernel  = clusters_d.moduleStart();
+        auto clusters_in_kernel = clusters_d.clusInModule();
+        auto clusters_cs_kernel = clusters_d.clusModuleStart();
+      cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocks) * sycl::range<3>(1, 1, threadsPerBlock), sycl::range<3>(1, 1, threadsPerBlock)),
                           [=](sycl::nd_item<3> item) {
                                 gpuCalibPixel::calibDigis(isRun2,
-                                                          digis_d.moduleInd(),
-                                                          digis_d.c_xx(),
-                                                          digis_d.c_yy(),
-                                                          digis_d.adc(),
-                                                          gains,
+                                                          digis_ind_kernel,
+                                                          digis_x_kernel,
+                                                          digis_y_kernel,
+                                                          digis_adc_kernel,
+                                                          gains_kernel,
                                                           wordCounter,
-                                                          clusters_d.moduleStart(),
-                                                          clusters_d.clusInModule(),
-                                                          clusters_d.clusModuleStart(),
-                                                          item);
+                                                          clusters_s_kernel,
+                                                          clusters_in_kernel,
+                                                          clusters_cs_kernel,
+                                                          item,
+							                                            out);
                           });
+       });
       /*
       DPCT1010:32: SYCL uses exceptions to report errors and does not use the error codes. The call was replaced with 0. You need to rewrite this code.
       */
@@ -662,18 +687,26 @@ namespace pixelgpudetails {
       std::cout << "SYCL countModules kernel launch with " << blocks << " blocks of " << threadsPerBlock
                 << " threads\n";
 #endif
-       stream.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocks) * sycl::range<3>(1, 1, threadsPerBlock), sycl::range<3>(1, 1, threadsPerBlock)),
+       stream.submit([&](sycl::handler &cgh){
+	      auto digis_ind_kernel  = digis_d.c_moduleInd();
+        auto clusters_s_kernel = clusters_d.moduleStart();
+        auto digis_d_kernel    = digis_d.clus();
+        cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(1, 1, blocks) * sycl::range<3>(1, 1, threadsPerBlock), sycl::range<3>(1, 1, threadsPerBlock)),
                           [=](sycl::nd_item<3> item) {
-                                countModules(digis_d.c_moduleInd(), clusters_d.moduleStart(), digis_d.clus(), wordCounter, item);
+                                countModules(digis_ind_kernel, 
+                                             clusters_s_kernel, 
+                                             digis_d_kernel, 
+                                             wordCounter, 
+					                                   item);
                           });
+        });
       /*
       DPCT1010:33: SYCL uses exceptions to report errors and does not use the error codes. The call was replaced with 0. You need to rewrite this code.
       */
       //cudaCheck(0);
 
       // read the number of modules into a data member, used by getProduct())
-      cms::sycltools::copyAsync(&(nModules_Clusters_h[0]), clusters_d.moduleStart(), stream);
-     
+      stream.memcpy(&(nModules_Clusters_h[0]), clusters_d.moduleStart(), sizeof(uint32_t));     
       threadsPerBlock = 256;
       blocks = MaxNumModules;
 #ifdef GPU_DEBUG
@@ -686,8 +719,8 @@ namespace pixelgpudetails {
        stream.submit([&](sycl::handler &cgh) {
           sycl::accessor<uint32_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
               local_gMaxHit_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh);
-          sycl::accessor<uint8_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
-              local_mSize_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh);
+          sycl::accessor<int, 1, sycl::access_mode::read_write, sycl::access::target::local>
+              local_mSize_acc(sycl::range<1>(sizeof(int) * blocks), cgh);
           sycl::accessor<Hist, 1, sycl::access_mode::read_write, sycl::access::target::local>
               hist_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh); //FIXME_ why 32?
           sycl::accessor<uint32_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
@@ -698,43 +731,47 @@ namespace pixelgpudetails {
               local_n40_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh);
           sycl::accessor<uint32_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
               local_n60_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh);
-          sycl::accessor<uint32_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
+          sycl::accessor<int, 1, sycl::access_mode::read_write, sycl::access::target::local>
               local_n0_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh);
-          sycl::accessor<uint8_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
+          sycl::accessor<unsigned int, 1, sycl::access_mode::read_write, sycl::access::target::local>
               foundClusters_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh); 
-
+          sycl::stream out(1024, 768, cgh);
+              auto digis_x_kernel     = digis_d.c_xx();
+              auto digis_y_kernel     = digis_d.c_yy();
+              auto digis_ind_kernel   = digis_d.c_moduleInd();
+              auto digis_clus_kernel  = digis_d.clus();
+              auto clusters_s_kernel  = clusters_d.c_moduleStart();
+              auto clusters_in_kernel = clusters_d.clusInModule();
+              auto clusters_id_kernel = clusters_d.moduleId();
           cgh.parallel_for(
               sycl::nd_range<3>(blocks * sycl::range<3>(1, 1, threadsPerBlock), sycl::range<3>(1, 1, threadsPerBlock)),
               [=](sycl::nd_item<3> item) [[intel::reqd_sub_group_size(32)]] { // explicitly specify sub-group size (32 is the maximum)
-                                findClus(digis_d.c_moduleInd(),
-                                         digis_d.c_xx(),
-                                         digis_d.c_yy(),
-                                         clusters_d.c_moduleStart(),
-                                         clusters_d.clusInModule(),
-                                         clusters_d.moduleId(),
-                                         digis_d.clus(),
+                                findClus(digis_ind_kernel,
+                                         digis_x_kernel,
+                                         digis_y_kernel,
+                                         clusters_s_kernel,
+                                         clusters_in_kernel,
+                                         clusters_id_kernel,
+                                         digis_clus_kernel,
                                          wordCounter,
                                          item,
                                          (uint32_t *)local_gMaxHit_acc.get_pointer(),
-                                         (uint8_t *)local_mSize_acc.get_pointer(),
+                                         (int *)local_mSize_acc.get_pointer(),
                                          (Hist *)hist_acc.get_pointer(),
                                          (uint32_t *)local_ws_acc.get_pointer(),
                                          (uint32_t *)local_totGood_acc.get_pointer(),
                                          (uint32_t *)local_n40_acc.get_pointer(),
                                          (uint32_t *)local_n60_acc.get_pointer(),
-                                         (uint32_t *)local_n0_acc.get_pointer(),
-                                         (uint8_t *)foundClusters_acc.get_pointer(),
+                                         (int *)local_n0_acc.get_pointer(),
+                                         (unsigned int *)foundClusters_acc.get_pointer()
                                          );
               });
                   });
 
-      /*
-      DPCT1010:34: SYCL uses exceptions to report errors and does not use the error codes. The call was replaced with 0. You need to rewrite this code.
-      */
-      cudaCheck(0);
+      
 #ifdef GPU_DEBUG
-      cudaDeviceSynchronize();
-      cudaCheck(cudaGetLastError());
+      //cudaDeviceSynchronize();
+      //cudaCheck(cudaGetLastError());
 #endif
   
       stream.submit([&](sycl::handler &cgh) {
@@ -746,26 +783,32 @@ namespace pixelgpudetails {
               newclusId_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh); //FIXME_ why 32?
           sycl::accessor<uint16_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
               local_ws_acc(sycl::range<1>(sizeof(int32_t) * blocks), cgh);
-      
+          sycl::stream out(1024, 768, cgh);
+                  auto digis_ind_kernel   = digis_d.moduleInd();  
+                  auto digis_adc_kernel   = digis_d.c_adc();
+                  auto clusters_s_kernel  = clusters_d.c_moduleStart();
+                  auto clusters_in_kernel = clusters_d.clusInModule();
+                  auto clusters_cs_kernel = clusters_d.c_moduleId();
+                  auto digis_clus_kernel  = digis_d.clus();
       // apply charge cut
           cgh.parallel_for(
               sycl::nd_range<3>(blocks * sycl::range<3>(1, 1, threadsPerBlock), sycl::range<3>(1, 1, threadsPerBlock)),
               [=](sycl::nd_item<3> item) [[intel::reqd_sub_group_size(32)]] { // explicitly specify sub-group size (32 is the maximum)
-                                clusterChargeCut(digis_d.moduleInd(),
-                                                 digis_d.c_adc(),
-                                                 clusters_d.c_moduleStart(),
-                                                 clusters_d.clusInModule(),
-                                                 clusters_d.c_moduleId(),
-                                                 digis_d.clus(),
+                                clusterChargeCut(digis_ind_kernel,
+                                                 digis_adc_kernel,
+                                                 clusters_s_kernel,
+                                                 clusters_in_kernel,
+                                                 clusters_cs_kernel,
+                                                 digis_clus_kernel,
                                                  wordCounter,
                                                  item,
-                                                 (uint32_t *)charge_acc.get_pointer(),
+                                                 (int32_t *)charge_acc.get_pointer(),
                                                  (uint8_t *)ok_acc.get_pointer(),
                                                  (uint16_t *)newclusId_acc.get_pointer(),
                                                  (uint16_t *)local_ws_acc.get_pointer()
                                                  );
               });
-                  });
+            });
     
       /*
       DPCT1010:35: SYCL uses exceptions to report errors and does not use the error codes. The call was replaced with 0. You need to rewrite this code.
@@ -778,27 +821,29 @@ namespace pixelgpudetails {
       // synchronization/ExternalWork
 
       stream.submit([&](sycl::handler &cgh) {
-          sycl::accessor<int32_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
-              local_ws_acc(sycl::range<1>(sizeof(int32_t)), cgh);
-      
+          sycl::accessor<uint32_t, 1, sycl::access_mode::read_write, sycl::access::target::local>
+              local_ws_acc(sycl::range<1>(sizeof(uint32_t)), cgh);
+              auto clusters_in_kernel  = clusters_d.c_clusInModule();
+              auto clusters_s_kernel  = clusters_d.clusModuleStart();
       // apply charge cut
           cgh.parallel_for(
               sycl::nd_range<3>(sycl::range<3>(1, 1, 1024), sycl::range<3>(1, 1, 1024)),
               [=](sycl::nd_item<3> item) [[intel::reqd_sub_group_size(32)]] { // explicitly specify sub-group size (32 is the maximum)
-                                clusterChargeCut(clusters_d.c_clusInModule(), 
-                                                 clusters_d.clusModuleStart(),
-                                                 item,
-                                                 (uint16_t *)local_ws_acc.get_pointer()
-                                                 );
+                                fillHitsModuleStart(clusters_in_kernel, 
+                                                    clusters_s_kernel,
+                                                    item,
+                                                    (uint32_t *)local_ws_acc.get_pointer()
+                                                    );
               });
                   });
 
       // MUST be ONE block
 
       // last element holds the number of all clusters
-      cms::sycltools::copyAsync(&(nModules_Clusters_h[1]), 
-                                  clusters_d.moduleStart() + gpuClustering::MaxNumModules, 
-                                  stream);
+      stream.memcpy(&(nModules_Clusters_h[1]), 
+                      clusters_d.moduleStart() + gpuClustering::MaxNumModules, 
+                      sizeof(int32_t)); 
+
 
 #ifdef GPU_DEBUG
       cudaDeviceSynchronize();

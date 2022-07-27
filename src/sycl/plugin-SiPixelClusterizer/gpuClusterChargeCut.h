@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <cstdio>
 
-#include "SYCLCore/cuda_assert.h"
+#include "SYCLCore/sycl_assert.h"
 #include "SYCLCore/prefixScan.h"
 
 #include "gpuClusteringConstants.h"
@@ -39,6 +39,9 @@ namespace gpuClustering {
       return;
 
     if (item_ct1.get_local_id(2) == 0 && nclus > MaxNumClustersPerModules)
+    {
+       //<< "Warning too many clusters in module " << thisModuleId << " in block " << item.get_group(2) << ": " << nclus << " > " << MaxNumClustersPerModules << "\n";
+    }
       /*
       DPCT1015:5: Output needs adjustment.
       */
@@ -102,7 +105,7 @@ namespace gpuClustering {
 
     // renumber
 
-    cms::sycltools::blockPrefixScan(newclusId, nclus, ws);
+    cms::sycltools::blockPrefixScan(newclusId, nclus, item_ct1, ws);
 
     assert(nclus >= newclusId[nclus - 1]);
 
