@@ -156,8 +156,8 @@ namespace pixelgpudetails {
       const unsigned char* fedId() const { return fedId_.get(); }
 
     private:
-      cms::sycltools::host::noncached::unique_ptr<unsigned int[]> word_;
-      cms::sycltools::host::noncached::unique_ptr<unsigned char[]> fedId_;
+      std::unique_ptr<unsigned int[]> word_ ;
+      std::unique_ptr<unsigned char[]> fedId_;
     };
 
     SiPixelRawToClusterGPUKernel() = default;

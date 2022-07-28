@@ -41,18 +41,20 @@ namespace pixelgpudetails {
   // number of words for all the FEDs
   constexpr uint32_t MAX_FED_WORDS = pixelgpudetails::MAX_FED * pixelgpudetails::MAX_WORD;
 
-  SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender() {
+  SiPixelRawToClusterGPUKernel::WordFedAppender::WordFedAppender()
+      : word_(new unsigned int),
+      fedId_(new unsigned char){
      
-    std::unique_ptr<unsigned int> word_ = std::make_unique<unsigned int>();
+    // std::unique_ptr<unsigned int> word_ = std::make_unique<unsigned int>();
     //word_ = cms::sycltools::make_host_noncached_unique<unsigned int[]>(MAX_FED_WORDS, 0);
-    std::unique_ptr<unsigned int> fedId_ = std::make_unique<unsigned int>();
+    // std::unique_ptr<unsigned int> fedId_ = std::make_unique<unsigned int>();
     //fedId_ = cms::sycltools::make_host_noncached_unique<unsigned char[]>(MAX_FED_WORDS, 0);
   }
 
   void SiPixelRawToClusterGPUKernel::WordFedAppender::initializeWordFed(int fedId,
                                                                         unsigned int wordCounterGPU,
                                                                         const uint32_t *src,
-                                                                        unsigned int length) {
+                                                                        unsigned int length) {                                                     
     std::memcpy(word_.get() + wordCounterGPU, src, sizeof(uint32_t) * length);
     std::memset(fedId_.get() + wordCounterGPU / 2, fedId - 1200, length / 2);
   }
@@ -586,14 +588,17 @@ namespace pixelgpudetails {
     {
       const int threadsPerBlock = 512;
       const int blocks = (wordCounter + threadsPerBlock - 1) / threadsPerBlock;  // fill it all
+    std::cout << "NULL pointer! 1 " << std::endl;
 
       assert(0 == wordCounter % 2);
       // wordCounter is the total no of words in each event to be trasfered on device
       auto word_d = cms::sycltools::make_device_unique<uint32_t[]>(wordCounter, stream);
       auto fedId_d = cms::sycltools::make_device_unique<uint8_t[]>(wordCounter, stream);
+    std::cout << "NULL pointer! 2" << std::endl;
 
       stream.memcpy(word_d.get(), wordFed.word(), wordCounter);
       stream.memcpy(fedId_d.get(), wordFed.fedId(), wordCounter/2);
+
       stream.submit([&](sycl::handler &cgh) {
              auto cablingMap_kernel   = cablingMap;
              auto modToUnp_kernel     = modToUnp;
