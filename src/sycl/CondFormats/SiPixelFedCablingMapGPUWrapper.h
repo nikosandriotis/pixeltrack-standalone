@@ -28,7 +28,7 @@ private:
   std::vector<unsigned char> modToUnpDefault;
   bool hasQuality_;
 
-  SiPixelFedCablingMapGPU *cablingMapHost = nullptr;  // pointer to struct in CPU
+  SiPixelFedCablingMapGPU *cablingMapHost_ = nullptr;  // pointer to struct in CPU
 
   struct GPUData {
     ~GPUData();

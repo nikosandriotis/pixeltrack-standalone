@@ -42,10 +42,10 @@ namespace cms::sycltools {
 
   SharedEventPtr EventCache::makeOrGet(int dev) {
     return cache_[dev].makeOrGet([dev]() {
-      sycl::event* event;
+      sycl::event event;
       // it should be a bit faster to ignore timings
       //cudaCheck(cudaEventCreateWithFlags(&event, cudaEventDisableTiming));
-      return std::unique_ptr<BareEvent, Deleter>(event, Deleter());
+      return std::unique_ptr<BareEvent, Deleter>(&event, Deleter());
     });
   }
 

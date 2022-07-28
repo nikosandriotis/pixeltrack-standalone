@@ -18,23 +18,33 @@ SiPixelFedCablingMapGPUWrapper::SiPixelFedCablingMapGPUWrapper(SiPixelFedCabling
                                                                std::vector<unsigned char> modToUnp)
     : modToUnpDefault(modToUnp.size()), hasQuality_(true) {
   //cudaCheck(cudaMallocHost(&cablingMapHost, sizeof(SiPixelFedCablingMapGPU)));
-  std::unique_ptr<SiPixelFedCablingMapGPU> cablingMapHost = std::make_unique<SiPixelFedCablingMapGPU>();
-  
-  std::memcpy(cablingMapHost.get(), &cablingMap, sizeof(SiPixelFedCablingMapGPU));
+  cablingMapHost_ = new SiPixelFedCablingMapGPU();
+
+  std::memcpy(cablingMapHost_, &cablingMap, sizeof(SiPixelFedCablingMapGPU));
   std::copy(modToUnp.begin(), modToUnp.end(), modToUnpDefault.begin());
 }
 
 SiPixelFedCablingMapGPUWrapper::~SiPixelFedCablingMapGPUWrapper() { 
-  //cudaCheck(cudaFreeHost(cablingMapHost)); 
+  delete cablingMapHost_ ;
   }
 
 const SiPixelFedCablingMapGPU* SiPixelFedCablingMapGPUWrapper::getGPUProductAsync(sycl::queue syclStream) const {
   const auto& data = gpuData_.dataForCurrentDeviceAsync(syclStream, [this](GPUData& data, sycl::queue stream) {
     // allocate
     //cudaCheck(cudaMalloc(&data.cablingMapDevice, sizeof(SiPixelFedCablingMapGPU)));
+    if (cablingMapHost_ != nullptr) {
+        std::cout << "Valid pointer! fedcabling" << std::endl;
+    } else {
+        std::cout << "NULL pointer!" << std::endl;
+    }
     data.cablingMapDevice = (SiPixelFedCablingMapGPU *)sycl::malloc_device(sizeof(SiPixelFedCablingMapGPU), stream);
     // transfer
-    stream.memcpy(data.cablingMapDevice, this->cablingMapHost, sizeof(SiPixelFedCablingMapGPU));
+    if (data.cablingMapDevice != nullptr) {
+        std::cout << "Valid pointer! fedcabling" << std::endl;
+    } else {
+        std::cout << "NULL pointer!" << std::endl;
+    }
+    stream.memcpy(data.cablingMapDevice, this->cablingMapHost_, sizeof(SiPixelFedCablingMapGPU));
     //cudaCheck(cudaMemcpyAsync(
     //    data.cablingMapDevice, this->cablingMapHost, sizeof(SiPixelFedCablingMapGPU), cudaMemcpyDefault, stream));
   });

@@ -9,7 +9,7 @@ SiPixelGainCalibrationForHLTGPU::SiPixelGainCalibrationForHLTGPU(SiPixelGainForH
                                                                  std::vector<char> gainData)
     : gainData_(std::move(gainData)) {
   //cudaCheck(cudaMallocHost(&gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU)));
-  std::unique_ptr<SiPixelGainForHLTonGPU> gainForHLTonHost_ = std::make_unique<SiPixelGainForHLTonGPU>();
+   gainForHLTonHost_ = new SiPixelGainForHLTonGPU();
   *gainForHLTonHost_ = gain;
 }
 
@@ -31,7 +31,6 @@ const SiPixelGainForHLTonGPU* SiPixelGainCalibrationForHLTGPU::getGPUProductAsyn
       //cudaMalloc((void**)&data.gainForHLTonGPU, sizeof(SiPixelGainForHLTonGPU));
       //cudaMalloc((void**)&data.gainDataOnGPU, this->gainData_.size());
       // gains.data().data() is used also for non-GPU code, we cannot allocate it on aligned and write-combined memory
-      
       stream.memcpy(data.gainDataOnGPU, this->gainData_.data(), this->gainData_.size());
       //cudaMemcpyAsync(data.gainDataOnGPU, this->gainData_.data(), this->gainData_.size(), cudaMemcpyDefault, stream);
       
@@ -39,7 +38,7 @@ const SiPixelGainForHLTonGPU* SiPixelGainCalibrationForHLTGPU::getGPUProductAsyn
       //cudaMemcpyAsync(
       //    data.gainForHLTonGPU, this->gainForHLTonHost_, sizeof(SiPixelGainForHLTonGPU), cudaMemcpyDefault, stream);
       
-      stream.memcpy(data.gainForHLTonGPU->v_pedestals, &(data.gainDataOnGPU), sizeof(SiPixelGainForHLTonGPU_DecodingStructure*));
+      stream.memcpy(&(data.gainForHLTonGPU->v_pedestals), &(data.gainDataOnGPU), sizeof(SiPixelGainForHLTonGPU_DecodingStructure*));
       //cudaMemcpyAsync(&(data.gainForHLTonGPU->v_pedestals),
       //                          &(data.gainDataOnGPU),
       //                          sizeof(SiPixelGainForHLTonGPU_DecodingStructure*),

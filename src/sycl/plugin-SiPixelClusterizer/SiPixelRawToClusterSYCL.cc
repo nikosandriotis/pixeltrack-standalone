@@ -74,102 +74,102 @@ void SiPixelRawToClusterSYCL::acquire(const edm::Event& iEvent,
                              ") differs the one from SiPixelFedCablingMapGPUWrapper. Please fix your configuration.");
   }
   // get the GPU product already here so that the async transfer can begin
-  const auto* gpuMap = hgpuMap.getGPUProductAsync(ctx.stream());
-  const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(ctx.stream());
-
-  auto const& hgains = iSetup.get<SiPixelGainCalibrationForHLTGPU>();
+    const auto* gpuMap = hgpuMap.getGPUProductAsync(ctx.stream());
+    const unsigned char* gpuModulesToUnpack = hgpuMap.getModToUnpAllAsync(ctx.stream());
+  
+    auto const& hgains = iSetup.get<SiPixelGainCalibrationForHLTGPU>();
   // get the GPU product already here so that the async transfer can begin
-  const auto* gpuGains = hgains.getGPUProductAsync(ctx.stream());
+    const auto* gpuGains = hgains.getGPUProductAsync(ctx.stream());
 
-  auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
+    auto const& fedIds_ = iSetup.get<SiPixelFedIds>().fedIds();
 
-  const auto& buffers = iEvent.get(rawGetToken_);
+    const auto& buffers = iEvent.get(rawGetToken_);
 
-  errors_.clear();
+    errors_.clear();
 
   // GPU specific: Data extraction for RawToDigi GPU
-  unsigned int wordCounterGPU = 0;
-  unsigned int fedCounter = 0;
-  bool errorsInEvent = false;
+    unsigned int wordCounterGPU = 0;
+    unsigned int fedCounter = 0;
+    bool errorsInEvent = false;
 
   // In CPU algorithm this loop is part of PixelDataFormatter::interpretRawData()
-  ErrorChecker errorcheck;
-  for (int fedId : fedIds_) {
-    if (fedId == 40)
-      continue;  // skip pilot blade data
+    ErrorChecker errorcheck;
+    for (int fedId : fedIds_) {
+      if (fedId == 40)
+        continue;  // skip pilot blade data
 
     // for GPU
     // first 150 index stores the fedId and next 150 will store the
     // start index of word in that fed
-    assert(fedId >= 1200);
-    fedCounter++;
+      assert(fedId >= 1200);
+      fedCounter++;
 
     // get event data for this fed
-    const FEDRawData& rawData = buffers.FEDData(fedId);
+      const FEDRawData& rawData = buffers.FEDData(fedId);
 
-    // GPU specific
-    int nWords = rawData.size() / sizeof(uint64_t);
-    if (nWords == 0) {
-      continue;
-    }
+      // GPU specific
+      int nWords = rawData.size() / sizeof(uint64_t);
+      if (nWords == 0) {
+        continue;
+      }
 
     // check CRC bit
-    const uint64_t* trailer = reinterpret_cast<const uint64_t*>(rawData.data()) + (nWords - 1);
-    if (not errorcheck.checkCRC(errorsInEvent, fedId, trailer, errors_)) {
-      continue;
-    }
+      const uint64_t* trailer = reinterpret_cast<const uint64_t*>(rawData.data()) + (nWords - 1);
+      if (not errorcheck.checkCRC(errorsInEvent, fedId, trailer, errors_)) {
+        continue;
+      }
 
-    // check headers
-    const uint64_t* header = reinterpret_cast<const uint64_t*>(rawData.data());
-    header--;
-    bool moreHeaders = true;
-    while (moreHeaders) {
-      header++;
-      bool headerStatus = errorcheck.checkHeader(errorsInEvent, fedId, header, errors_);
-      moreHeaders = headerStatus;
-    }
+      // check headers
+      const uint64_t* header = reinterpret_cast<const uint64_t*>(rawData.data());
+      header--;
+      bool moreHeaders = true;
+      while (moreHeaders) {
+        header++;
+        bool headerStatus = errorcheck.checkHeader(errorsInEvent, fedId, header, errors_);
+        moreHeaders = headerStatus;
+      }
 
-    // check trailers
-    bool moreTrailers = true;
-    trailer++;
-    while (moreTrailers) {
-      trailer--;
-      bool trailerStatus = errorcheck.checkTrailer(errorsInEvent, fedId, nWords, trailer, errors_);
-      moreTrailers = trailerStatus;
-    }
+      // check trailers
+      bool moreTrailers = true;
+      trailer++;
+      while (moreTrailers) {
+        trailer--;
+        bool trailerStatus = errorcheck.checkTrailer(errorsInEvent, fedId, nWords, trailer, errors_);
+        moreTrailers = trailerStatus;
+      }
 
-    const uint32_t* bw = (const uint32_t*)(header + 1);
-    const uint32_t* ew = (const uint32_t*)(trailer);
+      const uint32_t* bw = (const uint32_t*)(header + 1);
+      const uint32_t* ew = (const uint32_t*)(trailer);
 
-    assert(0 == (ew - bw) % 2);
-    wordFedAppender_->initializeWordFed(fedId, wordCounterGPU, bw, (ew - bw));
-    wordCounterGPU += (ew - bw);
+      assert(0 == (ew - bw) % 2);
+      wordFedAppender_->initializeWordFed(fedId, wordCounterGPU, bw, (ew - bw));
+      wordCounterGPU += (ew - bw);
 
-  }  // end of for loop
+    }  // end of for loop
 
-  gpuAlgo_.makeClustersAsync(isRun2_,
-                             gpuMap,
-                             gpuModulesToUnpack,
-                             gpuGains,
-                             *wordFedAppender_,
-                             std::move(errors_),
-                             wordCounterGPU,
-                             fedCounter,
-                             useQuality_,
-                             includeErrors_,
-                             false,  // debug
-                             ctx.stream());
+    gpuAlgo_.makeClustersAsync(isRun2_,
+                               gpuMap,
+                               gpuModulesToUnpack,
+                               gpuGains,
+                               *wordFedAppender_,
+                               std::move(errors_),
+                               wordCounterGPU,
+                               fedCounter,
+                               useQuality_,
+                               includeErrors_,
+                               false,  // debug
+                               ctx.stream());
 }
 
 void SiPixelRawToClusterSYCL::produce(edm::Event& iEvent, const edm::EventSetup& iSetup) {
-  cms::sycltools::ScopedContextProduce ctx{ctxState_};
-
-  auto tmp = gpuAlgo_.getResults();
-  ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
-  ctx.emplace(iEvent, clusterPutToken_, std::move(tmp.second));
-  if (includeErrors_) {
-    ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
-  }
+    cms::sycltools::ScopedContextProduce ctx{ctxState_};
+    
+    auto tmp = gpuAlgo_.getResults();
+    ctx.emplace(iEvent, digiPutToken_, std::move(tmp.first));
+    ctx.emplace(iEvent, clusterPutToken_, std::move(tmp.second));
+    if (includeErrors_) {
+      ctx.emplace(iEvent, digiErrorPutToken_, gpuAlgo_.getErrors());
+    }
 }
 
 // define as framework plugin

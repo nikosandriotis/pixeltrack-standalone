@@ -17,6 +17,7 @@ namespace edm {
       pluginManager_.load(name);
       auto esp = ESPluginFactory::create(name, datadir);
       esp->produce(eventSetup_);
+      std::cout << name << " I am done with this!" << std::endl;
     }
 
     //schedules_.reserve(numberOfStreams);
@@ -30,6 +31,7 @@ namespace edm {
     // The task that waits for all other work
     FinalWaitingTask globalWaitTask;
     tbb::task_group group;
+    std::cout << " Schedule Size: " << schedules_.size() << std::endl;
     for (auto& s : schedules_) {
       s.runToCompletionAsync(WaitingTaskHolder(group, &globalWaitTask));
     }
